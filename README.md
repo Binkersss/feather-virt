@@ -232,6 +232,61 @@ The runtime automatically:
 2. Removes per-container directories
 3. Cleans up cgroup entries
 
+## Goals
+1. Multi-Architecture Support
+
+    - Cross-compilation tooling: Ability to compile rootfs and binaries for x86_64, arm64, riscv64, and specialized devices (Jetson, Coral NPU, etc.).
+    
+    - Architecture-specific optimizations: CPU/GPU/TPU instruction sets, SIMD support (NEON, AVX2/AVX512, RISC-V vector extensions).
+    
+    - Configurable target profiles: Let the executable or build system select the target architecture, toolchain, and dependencies automatically.
+
+2. Lightweight and Modular RootFS
+
+    - Minimal base images: Only essential libraries and binaries; avoid bloated images.
+    
+    - Modular package inclusion: Optionally include inference frameworks, drivers, and edge libraries.
+    
+    - Update and patch mechanism: Easy way to add security updates or framework upgrades without rebuilding entire images.
+
+3. Hardware Abstraction & Drivers
+
+    - GPU/TPU/NPU support: Include CUDA, TensorRT, OpenCL, or Edge TPU runtime libraries as optional modules.
+    
+    - Flexible device detection: Runtime detection of available accelerators and dynamic selection of inference backend.
+    
+    - Plug-and-play device drivers: Precompiled or easily cross-compiled drivers for different edge boards.
+
+4. Edge Inference Optimization
+
+    - Framework integration: Support for ONNX Runtime, TensorFlow Lite, PyTorch Mobile, or OpenVINO.
+    
+    - Model deployment tooling: Allow easy injection of pre-trained models into images.
+    
+    - Quantization & pruning hooks: Provide options to build images with optimized models for edge inference (int8, fp16, sparsity).
+
+5. Build & Deployment Automation
+
+    - Config-driven builds: Already planning TOML configs, extend to target device profiles and model deployments.
+    
+    - CI/CD integration: Auto-build images for multiple architectures when code/models change.
+    
+    - Versioning and reproducibility: Tag images by architecture, framework version, and model version.
+
+6. Monitoring & Diagnostics
+
+    - Edge telemetry: Include optional lightweight monitoring tools to track inference latency, memory usage, CPU/GPU load.
+    
+    - Logging & debugging hooks: Allow devs to inspect runtime behavior without intrusive modifications.
+
+7. Extensibility & Ecosystem
+
+    - Plugin system: Let devs add support for new accelerators or inference frameworks without changing core code.
+    
+    - Community-friendly structure: Make configs, image manifests, and build scripts easily readable and extensible.
+    
+    - Documentation templates: Encourage developers to describe how to target new hardware architectures.
+
 ## Security Notes
 
 - This is a development/educational tool
