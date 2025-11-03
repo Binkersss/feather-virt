@@ -14,9 +14,9 @@ A modular, lightweight container runtime using Linux namespaces, cgroups v2, and
 ## Documentation
 
 - **[README.md](README.md)** - This file (overview and usage)
-- **[BUILD_GUIDE.md](BUILD_GUIDE.md)** - Detailed image building documentation
-- **[QUICKREF.md](QUICKREF.md)** - Quick reference for common commands
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and internals
+- **[BUILD_GUIDE.md](docs/BUILD_GUIDE.md)** - Detailed image building documentation
+- **[QUICKREF.md](docs/QUICKREF.md)** - Quick reference for common commands
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and internals
 
 ## Project Structure
 
