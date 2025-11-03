@@ -296,4 +296,4 @@ The runtime automatically:
 
 ## License
 
-Apache License 2.0 - See LICENSE.txt
+Apache License 2.0 - See [LICENSE.txt](LICENSE.txt)
