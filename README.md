@@ -241,4 +241,4 @@ The runtime automatically:
 
 ## License
 
-Educational/Development use. Adapt as needed for your use case.
+Apache License 2.0 - See LICENSE.txt
