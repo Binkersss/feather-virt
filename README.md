@@ -1,0 +1,244 @@
+# Feather Virt Dev - Lightweight Container Runtime
+
+A modular, lightweight container runtime using Linux namespaces, cgroups v2, and overlay filesystems.
+
+## Features
+
+- **Namespace Isolation**: PID, network, mount, UTS, IPC, and user namespaces
+- **Resource Limits**: Memory (128MB), CPU (50%), and process count (10) via cgroups v2
+- **Overlay Filesystem**: Copy-on-write root filesystem with per-container persistence
+- **Multiple Base Images**: Support for different rootfs images
+- **Named Containers**: Human-readable container identification
+- **Configurable Shell**: Choose your preferred shell
+
+## Documentation
+
+- **[README.md](README.md)** - This file (overview and usage)
+- **[BUILD_GUIDE.md](BUILD_GUIDE.md)** - Detailed image building documentation
+- **[QUICKREF.md](QUICKREF.md)** - Quick reference for common commands
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and internals
+
+## Project Structure
+
+```
+.
+├── main.c          # Main application and CLI argument parsing
+├── config.c/h      # Configuration management and image validation
+├── overlay.c/h     # Overlay filesystem setup and cleanup
+├── cgroup.c/h      # Cgroup v2 resource limit management
+├── namespace.c/h   # Namespace and UID/GID mapping
+├── Makefile        # Build configuration
+└── README.md       # This file
+```
+
+## Building
+
+```bash
+make
+```
+
+## Setup
+
+### 1. Create required directories:
+
+```bash
+sudo make setup-dirs
+```
+
+### 2. Build base images:
+
+The project includes a script to build and manage rootfs images:
+
+```bash
+# Build all supported images
+sudo scripts/build_rootfs.sh build-all
+
+# Or build specific images
+sudo scripts/build_rootfs.sh build alpine 3.20.2
+sudo scripts/build_rootfs.sh build busybox 1.35.0
+
+# List available images
+sudo scripts/build_rootfs.sh list
+
+# Verify image integrity
+sudo scripts/build_rootfs.sh verify
+```
+
+Images are stored as compressed tarballs in `/var/sandbox/basefs/` and automatically extracted to `/var/sandbox/cache/` on first use.
+
+**Supported images:**
+- `alpine-3.20.2` - Alpine Linux (~8-10MB compressed)
+- `busybox-1.35.0` - Minimal BusyBox system (~2-3MB compressed)
+
+## Usage
+
+### List Available Images
+
+```bash
+sudo ./feather_virt_dev --list-images
+```
+
+### Run a Container
+
+```bash
+# Basic usage with Alpine
+sudo ./feather_virt_dev --image alpine-3.20.2
+
+# With custom shell and name
+sudo ./feather_virt_dev --image alpine-3.20.2 --shell /bin/ash --name test1
+
+# With all options
+sudo ./feather_virt_dev --image debian-12 --shell /bin/bash --name webserver
+```
+
+### Command-Line Options
+
+- `--image <name>` - Select base rootfs image (required)
+- `--list-images` - Show available base images and exit
+- `--shell <path>` - Shell to execute (default: `/bin/sh`)
+- `--name <container-name>` - Human-readable container name (default: `unnamed`)
+- `-h, --help` - Show help message
+
+## Image Validation
+
+The tool validates that:
+1. The specified image tarball (`.tar.gz`) exists in `/var/sandbox/basefs/`
+2. The image is a valid compressed archive
+3. The image is automatically extracted to `/var/sandbox/cache/` on first use
+4. Cached images are reused for subsequent container launches
+
+The build script (`scripts/build_rootfs.sh`) maintains a manifest with checksums for integrity verification.
+
+## Resource Limits
+
+Each container is limited to:
+- **Memory**: 128 MB
+- **CPU**: 50% of one core
+- **Processes**: Maximum 10 PIDs
+
+Limits are enforced via cgroup v2 at `/sys/fs/cgroup/sandbox-<name>`.
+
+## Container Isolation
+
+Each container gets:
+- Private PID namespace (init is PID 1 inside)
+- Private network namespace (isolated networking)
+- Private mount namespace (separate filesystem view)
+- Private UTS namespace (custom hostname)
+- Private IPC namespace (isolated IPC)
+- User namespace with UID/GID mapping
+
+## Filesystem Layout
+
+```
+/var/sandbox/
+├── basefs/
+│   ├── alpine-3.20.2.tar.gz    # Compressed base image
+│   ├── busybox-1.35.0.tar.gz   # Compressed base image
+│   └── manifest.json           # Image metadata with checksums
+├── cache/
+│   ├── alpine-3.20.2/          # Extracted image (read-only lower layer)
+│   └── busybox-1.35.0/         # Extracted image (read-only lower layer)
+└── containers/
+    └── test1-12345/            # Per-container directory
+        ├── upper/              # Container-specific changes (copy-on-write)
+        ├── work/               # Overlay work directory
+        └── rootfs/             # Merged overlay mount point
+```
+
+**Image lifecycle:**
+1. Images are built as `.tar.gz` archives in `/var/sandbox/basefs/`
+2. On first use, images are extracted to `/var/sandbox/cache/<image-name>/`
+3. Extracted images are reused for all containers using that base image
+4. Each container gets its own overlay with copy-on-write in `upper/`
+
+## Requirements
+
+- Linux kernel 4.18+ (for cgroup v2)
+- Root privileges (for namespace and mount operations)
+- `tar` and `gzip` utilities
+- Internet connection (for building images)
+
+## Quick Start
+
+```bash
+# 1. Compile
+make
+
+# 2. Setup directories
+sudo make setup-dirs
+
+# 3. Build images
+sudo make build-images
+# OR manually:
+# sudo scripts/build_rootfs.sh build-all
+
+# 4. Run a container
+sudo ./feather_virt_dev --image alpine-3.20.2 --name mycontainer
+```
+
+## Example Session
+
+```bash
+# Build base images
+$ sudo scripts/build_rootfs.sh build-all
+[+] Building Alpine 3.20.2 rootfs...
+[+] Compressing rootfs...
+[+] Archive size: 8.2M
+[+] Build complete: /var/sandbox/basefs/alpine-3.20.2.tar.gz
+
+# List available images
+$ sudo ./feather_virt_dev --list-images
+Available base images in /var/sandbox/basefs:
+----------------------------------------
+  - alpine-3.20.2                (8.23 MB)
+  - busybox-1.35.0               (2.45 MB)
+
+# Start Alpine container (first time - will extract)
+$ sudo ./feather_virt_dev --image alpine-3.20.2 --shell /bin/ash --name web1
+Extracting image 'alpine-3.20.2' to cache...
+Image extracted successfully
+[host] Configuration:
+  Image:     /var/sandbox/cache/alpine-3.20.2
+  Shell:     /bin/ash
+  Name:      web1
+
+[host] Spawning isolated container...
+[host] overlay root mounted at /var/sandbox/containers/web1-12345/rootfs
+[sandbox child] pid=1 container='web1' merged root: /var/sandbox/containers/web1-12345/rootfs
+/ # hostname
+web1
+/ # ps aux
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/ash
+    2 root      0:00 ps aux
+/ # exit
+[host] cleaning up overlay at /var/sandbox/containers/web1-12345/rootfs
+[host] container 'web1' exited code=0
+
+# Subsequent launches use cached image (no extraction)
+$ sudo ./feather_virt_dev --image alpine-3.20.2 --name web2
+[host] Configuration:
+  Image:     /var/sandbox/cache/alpine-3.20.2
+  Shell:     /bin/sh
+  Name:      web2
+...
+```
+
+## Cleanup
+
+The runtime automatically:
+1. Unmounts the overlay filesystem
+2. Removes per-container directories
+3. Cleans up cgroup entries
+
+## Security Notes
+
+- This is a development/educational tool
+- Requires root privileges
+- User namespace provides some isolation, but full security hardening is needed for production
+- Consider adding seccomp filters, AppArmor/SELinux profiles for production use
+
+## License
+
+Educational/Development use. Adapt as needed for your use case.
