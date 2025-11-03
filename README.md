@@ -294,6 +294,8 @@ The runtime automatically:
 - User namespace provides some isolation, but full security hardening is needed for production
 - Consider adding seccomp filters, AppArmor/SELinux profiles for production use
 
+## Acknowledgements
+- Thank you to Jérôme Petazzoni for this talk:  https://youtu.be/sK5i-N34im8?si=Mt_oHl37T3d9CRPg
 ## License
 
 Apache License 2.0 - See [LICENSE.txt](LICENSE.txt)
