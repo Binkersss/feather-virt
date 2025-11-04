@@ -34,7 +34,7 @@ zig-build:	## Build using Zig compiler
 	$(MAKE) CC="$(ZIG_COMPILER)" CFLAGS="$(ZIG_FLAGS)" LDFLAGS="$(LDFLAGS)" all 
 
 # Development helpers
-.PHONY: setup-dirs test-alpine help
+.PHONY: setup-dirs test-alpine formant help
 
 setup-dirs:	  ## Create required sandbox directories
 	@echo "Creating sandbox directory structure..."
@@ -44,6 +44,9 @@ setup-dirs:	  ## Create required sandbox directories
 
 test-alpine: $(TARGET)	## Run Alpine test container
 	./$(TARGET) --image alpine-3.20.2 --name test1
+
+format: 	## Runs indent formatter with the Kernighan & Ritchie style 
+	indent -kr *.c *.h
 
 help:	## Show this help message
 	@echo "Available make targets:"

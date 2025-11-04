@@ -4,6 +4,6 @@
 #include "config.h"
 
 /* Setup cgroup v2 limits for container */
-void setup_cgroup(const container_config_t *cfg);
+void setup_cgroup(const container_config_t * cfg);
 
-#endif /* CGROUP_H */
+#endif				/* CGROUP_H */
