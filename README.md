@@ -34,7 +34,7 @@ A modular, lightweight container runtime using Linux namespaces, cgroups v2, and
 ## Building
 
 ```bash
-make
+make # or make zig-build to use the zig compiler
 ```
 
 ## Setup
