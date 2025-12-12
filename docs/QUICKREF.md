@@ -18,7 +18,7 @@ sudo scripts/build_rootfs.sh build alpine 3.20.2 --force
 ### Managing Images
 ```bash
 # List available images
-sudo ./feather_virt --list-images
+sudo ./zig-out/bin/feather_virt --list-images
 sudo scripts/build_rootfs.sh list
 
 # Verify image integrity
@@ -31,13 +31,13 @@ sudo scripts/build_rootfs.sh clean
 ### Running Containers
 ```bash
 # Basic container
-sudo ./feather_virt --image alpine-3.20.2
+sudo ./zig-out/bin/feather_virt --image alpine-3.20.2
 
 # Named container with custom shell
-sudo ./feather_virt --image alpine-3.20.2 --shell /bin/ash --name web1
+sudo ./zig-out/bin/feather_virt --image alpine-3.20.2 --shell /bin/ash --name web1
 
 # BusyBox container
-sudo ./feather_virt --image busybox-1.35.0 --name minimal
+sudo ./zig-out/bin/feather_virt --image busybox-1.35.0 --name minimal
 ```
 
 ## Directory Structure
@@ -73,10 +73,10 @@ sudo ./feather_virt --image busybox-1.35.0 --name minimal
 
 ### First-time Setup
 ```bash
-make
+zig build
 sudo zig build setup-dirs
 sudo ./scripts/build_rootfs.sh build alpine 3.20.2
-sudo ./feather_virt_dev --image alpine-3.20.2
+sudo ./zig-out/bin/feather_virt --image alpine-3.20.2
 ```
 
 ### Clean and Rebuild
@@ -115,7 +115,7 @@ sudo rm -rf /var/sandbox/cache/*
 
 | Component | Path |
 |-----------|------|
-| Binary | `./feather_virt_dev` |
+| Binary | `./zig-out/bin/feather_virt` |
 | Build script | `scripts/build_rootfs.sh` |
 | Images | `/var/sandbox/basefs/*.tar.gz` |
 | Cache | `/var/sandbox/cache/` |
@@ -123,3 +123,4 @@ sudo rm -rf /var/sandbox/cache/*
 | Cgroups | `/sys/fs/cgroup/sandbox-*` |
 | Manifest | `/var/sandbox/basefs/manifest.json` |
 
+```
