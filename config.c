@@ -50,6 +50,25 @@ int config_save_to_file(const container_config_t *cfg)
     return 0;
 }
 
+int config_load_from_file(const char *config_path, container_config_t *cfg) {
+    FILE *fp = fopen(config_path, "r");
+    if (!fp) return -1;
+    
+    char line[512];
+    while (fgets(line, sizeof(line), fp)) {
+        char *key, *value;
+        
+        // Very basic parsing - you may want to use a proper JSON library
+        if (sscanf(line, "  \"pid\": %d", &cfg->pid) == 1) continue;
+        if (sscanf(line, "  \"name\": \"%127[^\"]\"", cfg->name) == 1) continue;
+        if (sscanf(line, "  \"status\": \"%31[^\"]\"", cfg->status) == 1) continue;
+        // ... parse other fields ...
+    }
+    
+    fclose(fp);
+    return 0;
+}
+
 int config_update_status(const container_config_t *cfg, const char *status) {
     container_config_t tmp = *cfg;
     strncpy(tmp.status, status, sizeof(tmp.status) - 1);
