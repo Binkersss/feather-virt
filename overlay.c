@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-void mkdir_p(const char *path, mode_t mode)
+int mkdir_p(const char *path, mode_t mode)
 {
     char tmp[512];
     size_t len;
@@ -26,7 +26,7 @@ void mkdir_p(const char *path, mode_t mode)
 	    *p = '/';
 	}
     }
-    mkdir(tmp, mode);
+    return mkdir(tmp, mode);
 }
 
 int setup_overlay_root(const container_config_t * cfg, char *merged_out,

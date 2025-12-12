@@ -12,6 +12,6 @@ void cleanup_overlay(const container_config_t * cfg,
 		     const char *merged_root);
 
 /* Helper to create directories recursively */
-void mkdir_p(const char *path, mode_t mode);
+int mkdir_p(const char *path, mode_t mode);
 
 #endif				/* OVERLAY_H */

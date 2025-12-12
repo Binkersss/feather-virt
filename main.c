@@ -84,20 +84,19 @@ void print_usage(const char *prog)
 {
     printf("Usage: %s [OPTIONS]\n", prog);
     printf("\nOptions:\n");
-    printf
-	("  --image <name>        Select base rootfs image (required unless --list-images)\n");
-    printf
-	("  --list-images         Show available base images and exit\n");
-    printf
-	("  --shell <path>        Shell to execute (default: /bin/sh)\n");
-    printf
-	("  --name <name>         Human-readable container name (default: unnamed)\n");
+    printf("  --image <name>        Select base rootfs image (required unless listing)\n");
+    printf("  --list-images         Show available base images and exit\n");
+    printf("  --list-containers     Show running containers\n");
+    printf("  --list-all            Show all containers (running and stopped)\n");
+    printf("  --shell <path>        Shell to execute (default: /bin/sh)\n");
+    printf("  --name <name>         Human-readable container name (default: unnamed)\n");
+    printf("  --debug               Preserve container directory after exit\n");
     printf("  -h, --help            Show this help message\n");
     printf("\nExamples:\n");
     printf("  %s --image alpine-3.20.2\n", prog);
-    printf("  %s --image alpine-3.20.2 --shell /bin/ash --name test1\n",
-	   prog);
-    printf("  %s --list-images\n", prog);
+    printf("  %s --image alpine-3.20.2 --name test1 --debug\n", prog);
+    printf("  %s --list-containers\n", prog);
+    printf("  %s --list-all\n", prog);
 }
 
 int main(int argc, char *argv[])
@@ -194,7 +193,7 @@ int main(int argc, char *argv[])
     // Create container directory
     snprintf(config.container_dir, sizeof(config.container_dir),
              "/var/sandbox/containers/%d", getpid());
-    if (mkdir(config.container_dir, 0755) != 0) {
+    if (mkdir_p(config.container_dir, 0755) != 0) {
         fprintf(stderr, "Failed to create container directory\n");
         return 1;
     }
@@ -274,13 +273,17 @@ int main(int argc, char *argv[])
     waitpid(child, &status, 0);
 
     if (WIFEXITED(status)) {
-        config.exit_code = WEXITSTATUS(status);
-        strncpy(config.status, "exited", sizeof(config.status) - 1);
+        config_update_status(&config, "exited", WEXITSTATUS(status));
+        printf("[host] container '%s' exited code=%d\n", config.name,
+               WEXITSTATUS(status));
+    } else if (WIFSIGNALED(status)) {
+        config_update_status(&config, "killed", WTERMSIG(status));
+        printf("[host] container '%s' killed by signal %d\n", config.name,
+               WTERMSIG(status));
     } else {
-        config.exit_code = -1;
-        strncpy(config.status, "killed", sizeof(config.status) - 1);
+        config_update_status(&config, "stopped", -1);
+        printf("[host] container '%s' ended\n", config.name);
     }
-    config_save_to_file(&config);
 
     /* Cleanup */
     cleanup_overlay(&config, merged_root);
