@@ -3,15 +3,109 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <time.h>
 
 #define DEFAULT_IMAGES_DIR "/var/sandbox/basefs"
 #define DEFAULT_CONTAINER_BASE "/var/sandbox/containers"
 #define DEFAULT_CGROUP_BASE "/sys/fs/cgroup/sandbox"
 #define DEFAULT_SHELL "/bin/sh"
 #define CACHE_DIR "/var/sandbox/cache"
+
+int config_save_to_file(const container_config_t *cfg) 
+{
+    FILE *fp = fopen(cfg->config_file, "w");
+    if (!fp) {
+        perror("Failed to open config file");
+        return -1;
+    }
+    
+    char time_buf[64];
+    struct tm *tm_info = gmtime(&cfg->created_at);
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", tm_info);
+    
+    fprintf(fp, "{\n");
+    fprintf(fp, "  \"pid\": %d,\n", cfg->pid);
+    fprintf(fp, "  \"name\": \"%s\",\n", cfg->name);
+    fprintf(fp, "  \"image\": \"%s\",\n", cfg->base_root);
+    fprintf(fp, "  \"created_at\": \"%s\",\n", time_buf);
+    fprintf(fp, "  \"command\": [\"%s\"],\n", cfg->shell);
+    fprintf(fp, "  \"limits\": {\n");
+    fprintf(fp, "    \"memory_bytes\": %zu,\n", cfg->limits.memory_bytes);
+    fprintf(fp, "    \"cpu_quota\": %d,\n", cfg->limits.cpu_quota);
+    fprintf(fp, "    \"pids_max\": %d\n", cfg->limits.pids_max);
+    fprintf(fp, "  },\n");
+    fprintf(fp, "  \"status\": \"%s\"", cfg->status);
+    if (strcmp(cfg->status, "exited") == 0) {
+        fprintf(fp, ",\n  \"exit_code\": %d\n", cfg->exit_code);
+    } else {
+        fprintf(fp, "\n");
+    }
+    fprintf(fp, "}\n");
+    
+    fclose(fp);
+    return 0;
+}
+
+int config_update_status(const container_config_t *cfg, const char *status) {
+    container_config_t tmp = *cfg;
+    strncpy(tmp.status, status, sizeof(tmp.status) - 1);
+    return config_save_to_file(&tmp);
+}
+
+int config_list_containers(int show_all) {
+    DIR *dir = opendir("/var/sandbox/containers");
+    if (!dir) {
+        perror("Failed to open containers directory");
+        return -1;
+    }
+    
+    printf("%-10s %-20s %-20s %-15s %-10s\n",
+           "PID", "NAME", "IMAGE", "STATUS", "CREATED");
+    printf("%s\n", "-------------------------------------------------------------------");
+    
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.') continue;
+        
+        char config_path[MAX_PATH_LEN];
+        snprintf(config_path, sizeof(config_path),
+                 "/var/sandbox/containers/%s/config.json", entry->d_name);
+        
+        container_config_t cfg;
+        if (config_load_from_file(config_path, &cfg) != 0) {
+            continue;
+        }
+        
+        // Check if process is still running
+        int is_running = (kill(cfg.pid, 0) == 0);
+        if (!is_running && strcmp(cfg.status, "running") == 0) {
+            strncpy(cfg.status, "stopped", sizeof(cfg.status) - 1);
+            config_save_to_file(&cfg);
+        }
+        
+        if (!show_all && strcmp(cfg.status, "running") != 0) {
+            continue;
+        }
+        
+        char time_str[32];
+        struct tm *tm_info = localtime(&cfg.created_at);
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M", tm_info);
+        
+        // Extract just the image name from full path
+        const char *image_name = strrchr(cfg.base_root, '/');
+        image_name = image_name ? image_name + 1 : cfg.base_root;
+        
+        printf("%-10d %-20s %-20s %-15s %-10s\n",
+               cfg.pid, cfg.name, image_name, cfg.status, time_str);
+    }
+    
+    closedir(dir);
+    return 0;
+}
 
 void config_init(container_config_t * cfg)
 {

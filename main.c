@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <sched.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -8,6 +9,7 @@
 #include <string.h>
 #include <signal.h>
 #include <getopt.h>
+#include <time.h>
 
 #include "config.h"
 #include "overlay.h"
@@ -22,6 +24,9 @@ static int sync_pipe[2] = { -1, -1 };
 
 /* Global config passed to child */
 static container_config_t *g_config = NULL;
+
+// Debug flag
+static int debug_mode = 0;
 
 /* Child entrypoint */
 int child_main(void *arg)
@@ -107,6 +112,9 @@ int main(int argc, char *argv[])
     static struct option long_options[] = {
 	{ "image", required_argument, 0, 'i' },
 	{ "list-images", no_argument, 0, 'l' },
+    { "list-containers", no_argument, 0, 'L' },
+    { "list-all", no_argument, 0, 'A' },
+    { "debug", no_argument, 0, 'd' },
 	{ "shell", required_argument, 0, 's' },
 	{ "name", required_argument, 0, 'n' },
 	{ "help", no_argument, 0, 'h' },
@@ -114,6 +122,8 @@ int main(int argc, char *argv[])
     };
 
     int opt;
+    int list_containers = 0;
+    int list_all = 0;
     while ((opt =
 	    getopt_long(argc, argv, "i:ls:n:h", long_options,
 			NULL)) != -1) {
@@ -124,7 +134,16 @@ int main(int argc, char *argv[])
 	case 'l':
 	    list_images = 1;
 	    break;
-	case 's':
+    case 'L':
+        list_containers = 1;
+        break;
+    case 'A':
+        list_all = 1;
+        break;
+    case 'd':
+        debug_mode = 1;
+        break;
+    case 's':
 	    strncpy(config.shell, optarg, MAX_PATH_LEN - 1);
 	    break;
 	case 'n':
@@ -137,6 +156,11 @@ int main(int argc, char *argv[])
 	    print_usage(argv[0]);
 	    return 1;
 	}
+    }
+    
+    if (list_containers) {
+        config_list_containers(list_all);
+        return 0;
     }
 
     /* Handle --list-images */
@@ -158,6 +182,25 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
+        // After config setup and before spawning child
+    config.created_at = time(NULL);
+    strncpy(config.status, "starting", sizeof(config.status) - 1);
+
+    // Set default limits (can be overridden by CLI flags)
+    config.limits.memory_bytes = 128 * 1024 * 1024;  // 128MB
+    config.limits.cpu_quota = 50000;  // 50% of one core
+    config.limits.pids_max = 10;
+
+    // Create container directory
+    snprintf(config.container_dir, sizeof(config.container_dir),
+             "/var/sandbox/containers/%d", getpid());
+    if (mkdir(config.container_dir, 0755) != 0) {
+        fprintf(stderr, "Failed to create container directory\n");
+        return 1;
+    }
+    snprintf(config.config_file, sizeof(config.config_file),
+             "%s/config.json", config.container_dir);
+
     printf("[host] Configuration:\n");
     printf("  Image:     %s\n", config.base_root);
     printf("  Shell:     %s\n", config.shell);
@@ -178,9 +221,7 @@ int main(int argc, char *argv[])
 
     /* Spawn child */
     g_config = &config;
-    pid_t child =
-	clone(child_main, child_stack + STACK_SIZE, flags,
-	      (void *) &config);
+    pid_t child = clone(child_main, child_stack + STACK_SIZE, flags, (void *) &config);
     if (child < 0) {
 	perror("clone failed");
 	exit(1);
@@ -188,6 +229,11 @@ int main(int argc, char *argv[])
 
     /* Store child PID in config */
     config.pid = child;
+    strncpy(config.status, "running", sizeof(config.status) - 1);
+    
+    if (config_save_to_file(&config) != 0) {
+        fprintf(stderr, "Warning: failed to save container metadata\n");
+    }
 
     /* Parent: close read end */
     close(sync_pipe[0]);
@@ -227,6 +273,15 @@ int main(int argc, char *argv[])
     int status;
     waitpid(child, &status, 0);
 
+    if (WIFEXITED(status)) {
+        config.exit_code = WEXITSTATUS(status);
+        strncpy(config.status, "exited", sizeof(config.status) - 1);
+    } else {
+        config.exit_code = -1;
+        strncpy(config.status, "killed", sizeof(config.status) - 1);
+    }
+    config_save_to_file(&config);
+
     /* Cleanup */
     cleanup_overlay(&config, merged_root);
 
@@ -238,6 +293,17 @@ int main(int argc, char *argv[])
 	       WTERMSIG(status));
     else
 	printf("[host] container '%s' ended\n", config.name);
+
+    if (!debug_mode) {
+        cleanup_overlay(&config, merged_root);
+        // Remove container directory
+        char cmd[MAX_PATH_LEN * 2];
+        snprintf(cmd, sizeof(cmd), "rm -rf %s", config.container_dir);
+        system(cmd);
+    } else {
+        printf("[host] Debug mode: container data preserved at %s\n",
+               config.container_dir);
+    }
 
     return 0;
 }
