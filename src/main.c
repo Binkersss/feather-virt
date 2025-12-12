@@ -187,7 +187,6 @@ int c_main(int argc, char *argv[])
 	fprintf(stderr, "\nUse --list-images to see available images\n");
 	return 1;
     }
-
     // After config setup and before spawning child
     config.created_at = time(NULL);
     strncpy(config.status, "starting", sizeof(config.status) - 1);

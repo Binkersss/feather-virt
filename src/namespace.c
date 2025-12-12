@@ -9,41 +9,61 @@
 #include <unistd.h>
 #include <errno.h>
 
+// Build UID map content using current user's UID
+int build_uid_map_content(char *buf, size_t buf_len)
+{
+    uid_t uid = getuid();
+    return snprintf(buf, buf_len, "0 %d 1\n", uid);
+}
+
+// Build GID map content using current user's GID
+int build_gid_map_content(char *buf, size_t buf_len)
+{
+    gid_t gid = getgid();
+    return snprintf(buf, buf_len, "0 %d 1\n", gid);
+}
+
+// Build path to /proc/<pid>/<filename>
+void build_proc_path(pid_t pid, const char *filename, char *buf,
+		     size_t buf_len)
+{
+    snprintf(buf, buf_len, "/proc/%d/%s", pid, filename);
+}
+
+// Write content to a /proc file
+int write_proc_file(pid_t pid, const char *filename, const char *content)
+{
+    char path[256];
+    build_proc_path(pid, filename, path, sizeof(path));
+
+    FILE *f = fopen(path, "w");
+    if (!f) {
+	perror(path);
+	return -1;
+    }
+
+    size_t len = strlen(content);
+    size_t written = fwrite(content, 1, len, f);
+    fclose(f);
+
+    return (written == len) ? 0 : -1;
+}
+
 void setup_uid_gid_map(pid_t child)
 {
-    char map_file[256];
     char map[128];
     FILE *f;
 
     /* Setup UID mapping: container UID 0 -> host UID */
-    snprintf(map_file, sizeof(map_file), "/proc/%d/uid_map", child);
-    f = fopen(map_file, "w");
-    if (f) {
-	snprintf(map, sizeof(map), "0 %d 1\n", getuid());
-	fwrite(map, 1, strlen(map), f);
-	fclose(f);
-    } else {
-	perror("open uid_map");
-    }
+    build_uid_map_content(map, sizeof(map));
+    write_proc_file(child, "uid_map", map);
 
     /* Deny setgroups */
-    snprintf(map_file, sizeof(map_file), "/proc/%d/setgroups", child);
-    f = fopen(map_file, "w");
-    if (f) {
-	fwrite("deny\n", 1, 5, f);
-	fclose(f);
-    }
+    write_proc_file(child, "setgroups", "deny\n");
 
     /* Setup GID mapping: container GID 0 -> host GID */
-    snprintf(map_file, sizeof(map_file), "/proc/%d/gid_map", child);
-    f = fopen(map_file, "w");
-    if (f) {
-	snprintf(map, sizeof(map), "0 %d 1\n", getgid());
-	fwrite(map, 1, strlen(map), f);
-	fclose(f);
-    } else {
-	perror("open gid_map");
-    }
+    build_gid_map_content(map, sizeof(map));
+    write_proc_file(child, "gid_map", map);
 }
 
 void setup_minimal_dev(void)

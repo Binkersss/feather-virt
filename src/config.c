@@ -54,8 +54,8 @@ int config_save_to_file(const container_config_t *cfg)
     /* Add resource limits */
     json_object *limits = json_object_new_object();
     json_object_object_add(limits, "memory_bytes",
-			   json_object_new_int64(cfg->
-						 limits.memory_bytes));
+			   json_object_new_int64(cfg->limits.
+						 memory_bytes));
     json_object_object_add(limits, "cpu_quota",
 			   json_object_new_int(cfg->limits.cpu_quota));
     json_object_object_add(limits, "pids_max",
