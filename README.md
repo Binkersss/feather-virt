@@ -31,18 +31,12 @@ A modular, lightweight container runtime using Linux namespaces, cgroups v2, and
 └── README.md       # This file
 ```
 
-## Building
-
-```bash
-make # or make zig-build to use the zig compiler
-```
-
 ## Setup
 
 ### 1. Create required directories:
 
 ```bash
-sudo make setup-dirs
+sudo zig build setup-dirs 
 ```
 
 ### 2. Build base images:

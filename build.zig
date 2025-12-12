@@ -180,6 +180,26 @@ pub fn build(b: *std.Build) void {
     //
     // Lastly, the Zig build system is relatively simple and self-contained,
     // and reading its source code will allow you to master it.
+
+    // Setup directories
+    const setup_dirs_step = b.step("setup-dirs", "Create required sandbox directories");
+    const mkdir_cmd = b.addSystemCommand(&.{
+        "mkdir",
+        "-p",
+        "/var/sandbox/basefs",
+        "/var/sandbox/containers",
+        "/sys/fs/cgroup/sandbox",
+    });
+    setup_dirs_step.dependOn(&mkdir_cmd.step);
+
+    // Format C sources
+    const format_step = b.step("format", "Format C source files with indent");
+    const format_cmd = b.addSystemCommand(&.{
+        "sh",
+        "-c",
+        "indent -kr src/*.c src/*.h 2>/dev/null || echo 'indent not found, skipping format'",
+    });
+    format_step.dependOn(&format_cmd.step);
 }
 
 // TODO
