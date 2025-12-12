@@ -1,3 +1,4 @@
 *.o
 *~
 feather_virt_dev
+.zig*
