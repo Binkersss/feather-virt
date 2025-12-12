@@ -89,7 +89,7 @@ Built images are stored in `/var/sandbox/basefs/`:
 When you first launch a container with an image:
 
 ```bash
-sudo ./feather_virt_dev --image alpine-3.20.2 --name test
+sudo ./feather_virt --image alpine-3.20.2 --name test
 ```
 
 The runtime:
@@ -199,18 +199,6 @@ Error: Failed to create cache directory
 3. **Cache management**: Monitor `/var/sandbox/cache/` size, clear unused images
 4. **Version naming**: Use semantic versioning in image names (e.g., `alpine-3.20.2`)
 5. **Minimize images**: Keep base images small (<50MB) for fast extraction
-
-## Performance Considerations
-
-| Operation | Time (Alpine) | Time (BusyBox) |
-|-----------|---------------|----------------|
-| Build | ~30-60s | ~10-20s |
-| First extraction | ~1-2s | ~0.5s |
-| Cached launch | ~0.1s | ~0.1s |
-
-**Storage:**
-- Compressed: 8-10MB (Alpine), 2-3MB (BusyBox)
-- Extracted: 15-20MB (Alpine), 4-5MB (BusyBox)
 
 ## Integration with Container Runtime
 

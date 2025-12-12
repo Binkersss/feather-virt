@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     User Interface                          │
-│  ./feather_virt_dev --image alpine-3.20.2 --name web1       │
+│  ./feather_virt --image alpine-3.20.2 --name web1           │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
@@ -62,7 +62,7 @@ Build Phase (scripts/build_rootfs.sh)
   /var/sandbox/basefs/alpine-3.20.2.tar.gz
 
 
-Runtime Phase (feather_virt_dev)
+Runtime Phase (feather_virt)
 ════════════════════════════════
 
   ┌──────────────┐
@@ -113,7 +113,7 @@ Runtime Phase (feather_virt_dev)
 
 ```
 ┌─────────────┐
-│   main.c    │  Entry point, CLI parsing, orchestration
+│ main.c/zig  │  Entry point, CLI parsing, orchestration
 └──────┬──────┘
        │
        ├─────────────────────────────────┐
@@ -279,7 +279,7 @@ Host View (outside container)
 ## Module Dependencies
 
 ```
-main.c
+main.c/zig
   ├── config.h
   │     ├── overlay.h
   │     └── (validates, extracts images)
@@ -294,6 +294,7 @@ Build Dependencies:
   • libc (glibc/musl)
   • Linux kernel headers
   • tar, gzip (runtime)
+  • json-c 
 ```
 
 ## Security Boundaries

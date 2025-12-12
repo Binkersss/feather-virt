@@ -21,6 +21,10 @@ pub fn build(b: *std.Build) void {
     // target and optimize options) will be listed when running `zig build --help`
     // in this directory.
 
+    // TODO
+    // See function def
+    checkJsonCDependency(b);
+
     // This creates a module, which represents a collection of source files alongside
     // some compilation options, such as optimization mode and linked system libraries.
     // Zig modules are the preferred way of making Zig code available to consumers.
@@ -28,7 +32,7 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
-    const mod = b.addModule("feather_virt", .{
+    const feather_virt_mod = b.addModule("feather_virt", .{
         // The root source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
         // in this file, which means that if you have declarations that you
@@ -78,10 +82,33 @@ pub fn build(b: *std.Build) void {
                 // repeated because you are allowed to rename your imports, which
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
-                .{ .name = "feather_virt", .module = mod },
+                .{ .name = "feather_virt", .module = feather_virt_mod },
             },
         }),
     });
+
+    // Add all C source files to the executable
+    exe.addCSourceFiles(.{
+        .files = &.{
+            "src/main.c",
+            "src/config.c",
+            "src/overlay.c",
+            "src/cgroup.c",
+            "src/namespace.c",
+        },
+        .flags = &.{
+            "-Wall",
+            "-Wextra",
+            "-O2",
+            "-D_GNU_SOURCE",
+        },
+    });
+
+    // Linking system libraries
+    exe.linkLibC();
+    exe.linkSystemLibrary("json-c");
+
+    exe.addIncludePath(b.path("src"));
 
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default
@@ -119,7 +146,7 @@ pub fn build(b: *std.Build) void {
     // Here `mod` needs to define a target, which is why earlier we made sure to
     // set the releative field.
     const mod_tests = b.addTest(.{
-        .root_module = mod,
+        .root_module = feather_virt_mod,
     });
 
     // A run step that will run the test executable.
@@ -153,4 +180,46 @@ pub fn build(b: *std.Build) void {
     //
     // Lastly, the Zig build system is relatively simple and self-contained,
     // and reading its source code will allow you to master it.
+
+    // Setup directories
+    const setup_dirs_step = b.step("setup-dirs", "Create required sandbox directories");
+    const mkdir_cmd = b.addSystemCommand(&.{
+        "mkdir",
+        "-p",
+        "/var/sandbox/basefs",
+        "/var/sandbox/containers",
+        "/sys/fs/cgroup/sandbox",
+    });
+    setup_dirs_step.dependOn(&mkdir_cmd.step);
+
+    // Format C sources
+    const format_step = b.step("format", "Format C source files with indent");
+    const format_cmd = b.addSystemCommand(&.{
+        "sh",
+        "-c",
+        "indent -kr src/*.c src/*.h 2>/dev/null || echo 'indent not found, skipping format'",
+    });
+    format_step.dependOn(&format_cmd.step);
+}
+
+// TODO
+// Move to zig json stdlib
+fn checkJsonCDependency(b: *std.Build) void {
+    const result = std.process.Child.run(.{
+        .allocator = b.allocator,
+        .argv = &.{ "pkg-config", "--exists", "json-c" },
+    }) catch {
+        std.debug.print("Warning: pkg-config not available, assuming json-c is installed\n", .{});
+        return;
+    };
+    defer b.allocator.free(result.stdout);
+    defer b.allocator.free(result.stderr);
+
+    if (result.term.Exited != 0) {
+        std.debug.print("Error: json-c library not found!\n", .{});
+        std.debug.print("Install with: sudo apt install libjson-c-dev\n", .{});
+        std.process.exit(1);
+    }
+
+    std.debug.print("✓ json-c dependency found\n", .{});
 }
