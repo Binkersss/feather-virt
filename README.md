@@ -27,7 +27,6 @@ A modular, lightweight container runtime using Linux namespaces, cgroups v2, and
 ├── overlay.c/h     # Overlay filesystem setup and cleanup
 ├── cgroup.c/h      # Cgroup v2 resource limit management
 ├── namespace.c/h   # Namespace and UID/GID mapping
-├── Makefile        # Build configuration
 └── README.md       # This file
 ```
 ## Dependencies
