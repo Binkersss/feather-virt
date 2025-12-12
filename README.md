@@ -30,6 +30,14 @@ A modular, lightweight container runtime using Linux namespaces, cgroups v2, and
 ├── Makefile        # Build configuration
 └── README.md       # This file
 ```
+## Dependencies
+
+- Linux kernel 4.18+ (for cgroup v2)
+- Root privileges (for namespace and mount operations)
+- `tar` and `gzip` utilities
+- Internet connection (for building images)
+- Json-c library
+- Zig installed
 
 ## Setup
 
@@ -69,20 +77,20 @@ Images are stored as compressed tarballs in `/var/sandbox/basefs/` and automatic
 ### List Available Images
 
 ```bash
-sudo ./feather_virt_dev --list-images
+sudo ./feather_virt --list-images
 ```
 
 ### Run a Container
 
 ```bash
 # Basic usage with Alpine
-sudo ./feather_virt_dev --image alpine-3.20.2
+sudo ./feather_virt --image alpine-3.20.2
 
 # With custom shell and name
-sudo ./feather_virt_dev --image alpine-3.20.2 --shell /bin/ash --name test1
+sudo ./feather_virt --image alpine-3.20.2 --shell /bin/ash --name test1
 
 # With all options
-sudo ./feather_virt_dev --image debian-12 --shell /bin/bash --name webserver
+sudo ./feather_virt --image debian-12 --shell /bin/bash --name webserver
 ```
 
 ### Command-Line Options
@@ -136,7 +144,7 @@ Each container gets:
 │   ├── alpine-3.20.2/          # Extracted image (read-only lower layer)
 │   └── busybox-1.35.0/         # Extracted image (read-only lower layer)
 └── containers/
-    └── test1-12345/            # Per-container directory
+    └── 12345/            # Per-container directory
         ├── upper/              # Container-specific changes (copy-on-write)
         ├── work/               # Overlay work directory
         └── rootfs/             # Merged overlay mount point
@@ -148,29 +156,21 @@ Each container gets:
 3. Extracted images are reused for all containers using that base image
 4. Each container gets its own overlay with copy-on-write in `upper/`
 
-## Requirements
-
-- Linux kernel 4.18+ (for cgroup v2)
-- Root privileges (for namespace and mount operations)
-- `tar` and `gzip` utilities
-- Internet connection (for building images)
 
 ## Quick Start
 
 ```bash
 # 1. Compile
-make
+zig build
 
 # 2. Setup directories
-sudo make setup-dirs
+sudo zig build setup-dirs
 
 # 3. Build images
-sudo make build-images
-# OR manually:
-# sudo scripts/build_rootfs.sh build-all
+sudo scripts/build_rootfs.sh image-name image-version
 
 # 4. Run a container
-sudo ./feather_virt_dev --image alpine-3.20.2 --name mycontainer
+sudo ./feather_virt --image alpine-3.20.2 --name mycontainer
 ```
 
 ## Example Session
@@ -184,14 +184,14 @@ $ sudo scripts/build_rootfs.sh build-all
 [+] Build complete: /var/sandbox/basefs/alpine-3.20.2.tar.gz
 
 # List available images
-$ sudo ./feather_virt_dev --list-images
+$ sudo ./feather_virt --list-images
 Available base images in /var/sandbox/basefs:
 ----------------------------------------
   - alpine-3.20.2                (8.23 MB)
   - busybox-1.35.0               (2.45 MB)
 
 # Start Alpine container (first time - will extract)
-$ sudo ./feather_virt_dev --image alpine-3.20.2 --shell /bin/ash --name web1
+$ sudo ./feather_virt --image alpine-3.20.2 --shell /bin/ash --name web1
 Extracting image 'alpine-3.20.2' to cache...
 Image extracted successfully
 [host] Configuration:
@@ -213,7 +213,7 @@ PID   USER     TIME  COMMAND
 [host] container 'web1' exited code=0
 
 # Subsequent launches use cached image (no extraction)
-$ sudo ./feather_virt_dev --image alpine-3.20.2 --name web2
+$ sudo ./feather_virt --image alpine-3.20.2 --name web2
 [host] Configuration:
   Image:     /var/sandbox/cache/alpine-3.20.2
   Shell:     /bin/sh

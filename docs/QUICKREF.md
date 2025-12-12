@@ -18,7 +18,7 @@ sudo scripts/build_rootfs.sh build alpine 3.20.2 --force
 ### Managing Images
 ```bash
 # List available images
-sudo ./feather_virt_dev --list-images
+sudo ./feather_virt --list-images
 sudo scripts/build_rootfs.sh list
 
 # Verify image integrity
@@ -31,13 +31,13 @@ sudo scripts/build_rootfs.sh clean
 ### Running Containers
 ```bash
 # Basic container
-sudo ./feather_virt_dev --image alpine-3.20.2
+sudo ./feather_virt --image alpine-3.20.2
 
 # Named container with custom shell
-sudo ./feather_virt_dev --image alpine-3.20.2 --shell /bin/ash --name web1
+sudo ./feather_virt --image alpine-3.20.2 --shell /bin/ash --name web1
 
 # BusyBox container
-sudo ./feather_virt_dev --image busybox-1.35.0 --name minimal
+sudo ./feather_virt --image busybox-1.35.0 --name minimal
 ```
 
 ## Directory Structure
@@ -74,39 +74,19 @@ sudo ./feather_virt_dev --image busybox-1.35.0 --name minimal
 ### First-time Setup
 ```bash
 make
-sudo make setup-dirs
-sudo make build-images
-sudo ./feather_virt_dev --image alpine-3.20.2
-```
-
-### Add New Image
-```bash
-sudo scripts/build_rootfs.sh build alpine 3.20.2
-sudo ./feather_virt_dev --list-images
+sudo zig build setup-dirs
+sudo ./scripts/build_rootfs.sh build alpine 3.20.2
 sudo ./feather_virt_dev --image alpine-3.20.2
 ```
 
 ### Clean and Rebuild
 ```bash
 # Remove compressed images
-sudo scripts/build_rootfs.sh clean
+sudo ./scripts/build_rootfs.sh clean
 
 # Remove cache (forces re-extraction)
 sudo rm -rf /var/sandbox/cache/*
 
-# Rebuild
-sudo make build-images
-```
-
-### Test Container
-```bash
-sudo ./feather_virt_dev --image alpine-3.20.2 --name test <<'EOF'
-hostname
-ps aux
-ls -la /
-exit
-EOF
-```
 
 ## Troubleshooting
 
@@ -143,18 +123,3 @@ EOF
 | Cgroups | `/sys/fs/cgroup/sandbox-*` |
 | Manifest | `/var/sandbox/basefs/manifest.json` |
 
-## Development
-
-```bash
-# Build
-make
-
-# Clean build artifacts
-make clean
-
-# Install system-wide
-sudo make install
-
-# Run tests
-make test-alpine
-```
