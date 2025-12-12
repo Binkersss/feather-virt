@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include "namespace.h"
 #include "overlay.h"
 #include <sys/mount.h>

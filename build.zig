@@ -182,12 +182,42 @@ pub fn build(b: *std.Build) void {
 
     const run_cgroup_tests = b.addRunArtifact(cgroup_tests);
 
+    // ==================== NAMESPACE TESTS ====================
+    const namespace_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/namespace_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    namespace_tests.addCSourceFiles(.{
+        .files = &.{
+            "src/overlay.c",
+            "src/config.c",
+            "src/namespace.c",
+        },
+        .flags = &.{
+            "-Wall",
+            "-Wextra",
+            "-O2",
+            "-D_GNU_SOURCE",
+        },
+    });
+
+    namespace_tests.linkLibC();
+    namespace_tests.linkSystemLibrary("json-c");
+    namespace_tests.addIncludePath(b.path("src"));
+
+    const run_namespace_tests = b.addRunArtifact(namespace_tests);
+
     // ==================== TEST STEPS ====================
     // Main test step - runs all unit tests
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
     test_step.dependOn(&run_cgroup_tests.step);
+    test_step.dependOn(&run_namespace_tests.step);
 
     // PLACEHOLDER
     // Separate step for integration tests that modify filesystem
