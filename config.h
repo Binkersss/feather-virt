@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <time.h>
 #include <sys/types.h>
 
 #define MAX_PATH_LEN 512
@@ -53,7 +54,7 @@ int config_save_to_file(const container_config_t *cfg);
 int config_load_from_file(const char *config_path, container_config_t *cfg);
 
 /* Update config json */
-int config_update_status(const container_config_t *cfg, const char *status);
+int config_update_status(const container_config_t *cfg, const char *status, int exit_code);
 
 /* List container configs */
 int config_list_containers(int show_all);  // 0=running only, 1=all
