@@ -142,45 +142,67 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
-    // Creates an executable that will run `test` blocks from the provided module.
-    // Here `mod` needs to define a target, which is why earlier we made sure to
-    // set the releative field.
+    // ==================== MODULE TESTS ====================
     const mod_tests = b.addTest(.{
         .root_module = feather_virt_mod,
     });
-
-    // A run step that will run the test executable.
     const run_mod_tests = b.addRunArtifact(mod_tests);
 
-    // Creates an executable that will run `test` blocks from the executable's
-    // root module. Note that test executables only test one module at a time,
-    // hence why we have to create two separate ones.
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
     });
-
-    // A run step that will run the second test executable.
     const run_exe_tests = b.addRunArtifact(exe_tests);
 
-    // A top level step for running all tests. dependOn can be called multiple
-    // times and since the two run steps do not depend on one another, this will
-    // make the two of them run in parallel.
-    const test_step = b.step("test", "Run tests");
+    // ==================== CGROUP TESTS ====================
+    const cgroup_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/cgroup_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    cgroup_tests.addCSourceFiles(.{
+        .files = &.{
+            "src/config.c",
+            "src/overlay.c",
+            "src/cgroup.c",
+            // Uncomment when you create the refactored version:
+            // "src/cgroup_testable.c",
+        },
+        .flags = &.{
+            "-Wall",
+            "-Wextra",
+            "-O2",
+            "-D_GNU_SOURCE",
+        },
+    });
+
+    cgroup_tests.linkLibC();
+    cgroup_tests.linkSystemLibrary("json-c");
+    cgroup_tests.addIncludePath(b.path("src"));
+
+    const run_cgroup_tests = b.addRunArtifact(cgroup_tests);
+
+    // ==================== TEST STEPS ====================
+    // Main test step - runs all unit tests
+    const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
+    test_step.dependOn(&run_cgroup_tests.step);
 
-    // Just like flags, top level steps are also listed in the `--help` menu.
-    //
-    // The Zig build system is entirely implemented in userland, which means
-    // that it cannot hook into private compiler APIs. All compilation work
-    // orchestrated by the build system will result in other Zig compiler
-    // subcommands being invoked with the right flags defined. You can observe
-    // these invocations when one fails (or you pass a flag to increase
-    // verbosity) to validate assumptions and diagnose problems.
-    //
-    // Lastly, the Zig build system is relatively simple and self-contained,
-    // and reading its source code will allow you to master it.
+    // PLACEHOLDER
+    // Separate step for integration tests that modify filesystem
+    // const integration_test_step = b.step("test-integration", "Run integration tests");
+    // integration_test_step.dependOn(&run_cgroup_integration_tests.step);
 
+    // PLACEHOLDER
+    // Combined test step for CI/CD
+    // const test_all_step = b.step("test-all", "Run all tests including integration");
+    // test_all_step.dependOn(test_step);
+    // test_all_step.dependOn(integration_test_step);
+
+    // ==================== UTILITY STEPS ====================
     // Setup directories
     const setup_dirs_step = b.step("setup-dirs", "Create required sandbox directories");
     const mkdir_cmd = b.addSystemCommand(&.{
@@ -200,6 +222,18 @@ pub fn build(b: *std.Build) void {
         "indent -kr src/*.c src/*.h 2>/dev/null || echo 'indent not found, skipping format'",
     });
     format_step.dependOn(&format_cmd.step);
+
+    // Just like flags, top level steps are also listed in the `--help` menu.
+    //
+    // The Zig build system is entirely implemented in userland, which means
+    // that it cannot hook into private compiler APIs. All compilation work
+    // orchestrated by the build system will result in other Zig compiler
+    // subcommands being invoked with the right flags defined. You can observe
+    // these invocations when one fails (or you pass a flag to increase
+    // verbosity) to validate assumptions and diagnose problems.
+    //
+    // Lastly, the Zig build system is relatively simple and self-contained,
+    // and reading its source code will allow you to master it.
 }
 
 // TODO
@@ -220,6 +254,4 @@ fn checkJsonCDependency(b: *std.Build) void {
         std.debug.print("Install with: sudo apt install libjson-c-dev\n", .{});
         std.process.exit(1);
     }
-
-    std.debug.print("✓ json-c dependency found\n", .{});
 }
