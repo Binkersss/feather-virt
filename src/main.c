@@ -105,7 +105,7 @@ void print_usage(const char *prog)
     printf("  %s --list-all\n", prog);
 }
 
-int main(int argc, char *argv[])
+int c_main(int argc, char *argv[])
 {
     container_config_t config;
     const char *image_name = NULL;

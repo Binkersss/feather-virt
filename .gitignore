@@ -1,6 +1,6 @@
 *.o
 *~
 feather_virt_dev
-.zig-cache
+.zig-cache/
 build/
 zig-out/
