@@ -14,12 +14,13 @@
 │  • Parse CLI arguments                                      │
 │  • Validate image exists (tarball)                          │
 │  • Check/create cache extraction                            │
+│  • Create config.json file                                  │
 └────────────────────┬────────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   Container Setup                           │
-│  • Clone with namespaces (PID, NET, MNT, UTS, IPC, USER)    │
+│  • Clone with namespaces (PID, NET, MNT, UTS, IPC, USER)    ;w│
 │  • Setup UID/GID mapping                                    │
 │  • Create overlay filesystem                                │
 │  • Apply cgroup limits                                      │

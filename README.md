@@ -95,6 +95,8 @@ sudo ./feather_virt_dev --image debian-12 --shell /bin/bash --name webserver
 
 - `--image <name>` - Select base rootfs image (required)
 - `--list-images` - Show available base images and exit
+- `--list-containers` - Show running containers
+- `--list-all` - Shwoo all containers
 - `--shell <path>` - Shell to execute (default: `/bin/sh`)
 - `--name <container-name>` - Human-readable container name (default: `unnamed`)
 - `-h, --help` - Show help message
