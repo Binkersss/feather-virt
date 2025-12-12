@@ -84,13 +84,19 @@ void print_usage(const char *prog)
 {
     printf("Usage: %s [OPTIONS]\n", prog);
     printf("\nOptions:\n");
-    printf("  --image <name>        Select base rootfs image (required unless listing)\n");
-    printf("  --list-images         Show available base images and exit\n");
+    printf
+	("  --image <name>        Select base rootfs image (required unless listing)\n");
+    printf
+	("  --list-images         Show available base images and exit\n");
     printf("  --list-containers     Show running containers\n");
-    printf("  --list-all            Show all containers (running and stopped)\n");
-    printf("  --shell <path>        Shell to execute (default: /bin/sh)\n");
-    printf("  --name <name>         Human-readable container name (default: unnamed)\n");
-    printf("  --debug               Preserve container directory after exit\n");
+    printf
+	("  --list-all            Show all containers (running and stopped)\n");
+    printf
+	("  --shell <path>        Shell to execute (default: /bin/sh)\n");
+    printf
+	("  --name <name>         Human-readable container name (default: unnamed)\n");
+    printf
+	("  --debug               Preserve container directory after exit\n");
     printf("  -h, --help            Show this help message\n");
     printf("\nExamples:\n");
     printf("  %s --image alpine-3.20.2\n", prog);
@@ -111,9 +117,9 @@ int main(int argc, char *argv[])
     static struct option long_options[] = {
 	{ "image", required_argument, 0, 'i' },
 	{ "list-images", no_argument, 0, 'l' },
-    { "list-containers", no_argument, 0, 'L' },
-    { "list-all", no_argument, 0, 'A' },
-    { "debug", no_argument, 0, 'd' },
+	{ "list-containers", no_argument, 0, 'L' },
+	{ "list-all", no_argument, 0, 'A' },
+	{ "debug", no_argument, 0, 'd' },
 	{ "shell", required_argument, 0, 's' },
 	{ "name", required_argument, 0, 'n' },
 	{ "help", no_argument, 0, 'h' },
@@ -133,17 +139,17 @@ int main(int argc, char *argv[])
 	case 'l':
 	    list_images = 1;
 	    break;
-    case 'L':
-        list_containers = 1;
-        break;
-    case 'A':
-        list_containers = 1;
-        list_all = 1;
-        break;
-    case 'd':
-        debug_mode = 1;
-        break;
-    case 's':
+	case 'L':
+	    list_containers = 1;
+	    break;
+	case 'A':
+	    list_containers = 1;
+	    list_all = 1;
+	    break;
+	case 'd':
+	    debug_mode = 1;
+	    break;
+	case 's':
 	    strncpy(config.shell, optarg, MAX_PATH_LEN - 1);
 	    break;
 	case 'n':
@@ -157,10 +163,10 @@ int main(int argc, char *argv[])
 	    return 1;
 	}
     }
-    
+
     if (list_containers) {
-        config_list_containers(list_all);
-        return 0;
+	config_list_containers(list_all);
+	return 0;
     }
 
     /* Handle --list-images */
@@ -171,9 +177,9 @@ int main(int argc, char *argv[])
 
     /* Validate that image was specified */
     //if (!image_name) {
-	//fprintf(stderr, "Error: --image is required\n\n");
-	//print_usage(argv[0]);
-	//return 1;
+    //fprintf(stderr, "Error: --image is required\n\n");
+    //print_usage(argv[0]);
+    //return 1;
     //}
 
     /* Set and validate image */
@@ -182,24 +188,14 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-        // After config setup and before spawning child
+    // After config setup and before spawning child
     config.created_at = time(NULL);
     strncpy(config.status, "starting", sizeof(config.status) - 1);
 
     // Set default limits (can be overridden by CLI flags)
-    config.limits.memory_bytes = 128 * 1024 * 1024;  // 128MB
-    config.limits.cpu_quota = 50000;  // 50% of one core
+    config.limits.memory_bytes = 128 * 1024 * 1024;	// 128MB
+    config.limits.cpu_quota = 50000;	// 50% of one core
     config.limits.pids_max = 10;
-
-    // Create container directory
-    snprintf(config.container_dir, sizeof(config.container_dir),
-             "/var/sandbox/containers/%d", getpid());
-    if (mkdir_p(config.container_dir, 0755) != 0) {
-        fprintf(stderr, "Failed to create container directory\n");
-        return 1;
-    }
-    snprintf(config.config_file, sizeof(config.config_file),
-             "%s/config.json", config.container_dir);
 
     printf("[host] Configuration:\n");
     printf("  Image:     %s\n", config.base_root);
@@ -221,7 +217,8 @@ int main(int argc, char *argv[])
 
     /* Spawn child */
     g_config = &config;
-    pid_t child = clone(child_main, child_stack + STACK_SIZE, flags, (void *) &config);
+    pid_t child = clone(child_main, child_stack + STACK_SIZE, flags,
+			(void *) &config);
     if (child < 0) {
 	perror("clone failed");
 	exit(1);
@@ -229,11 +226,16 @@ int main(int argc, char *argv[])
 
     /* Store child PID in config */
     config.pid = child;
-    strncpy(config.status, "running", sizeof(config.status) - 1);
-    
-    if (config_save_to_file(&config) != 0) {
-        fprintf(stderr, "Warning: failed to save container metadata\n");
+
+    // Create container directory
+    snprintf(config.container_dir, sizeof(config.container_dir),
+	     "/var/sandbox/containers/%d", config.pid);
+    if (mkdir_p(config.container_dir, 0755) != 0) {
+	fprintf(stderr, "Failed to create container directory\n");
+	return 1;
     }
+    snprintf(config.config_file, sizeof(config.config_file),
+	     "%s/config.json", config.container_dir);
 
     /* Parent: close read end */
     close(sync_pipe[0]);
@@ -257,6 +259,11 @@ int main(int argc, char *argv[])
     /* Setup cgroups */
     setup_cgroup(&config);
 
+    strncpy(config.status, "running", sizeof(config.status) - 1);
+    if (config_save_to_file(&config) != 0) {
+	fprintf(stderr, "Warning: failed to save container metadata\n");
+    }
+
     /* Send merged root path to child */
     size_t to_write = strlen(merged_root) + 1;
     if (write(sync_pipe[1], merged_root, to_write) != (ssize_t) to_write) {
@@ -274,39 +281,30 @@ int main(int argc, char *argv[])
     waitpid(child, &status, 0);
 
     if (WIFEXITED(status)) {
-        config_update_status(&config, "exited", WEXITSTATUS(status));
-        printf("[host] container '%s' exited code=%d\n", config.name,
-               WEXITSTATUS(status));
+	config_update_status(&config, "exited", WEXITSTATUS(status));
+	printf("[host] container '%s' exited code=%d\n", config.name,
+	       WEXITSTATUS(status));
     } else if (WIFSIGNALED(status)) {
-        config_update_status(&config, "killed", WTERMSIG(status));
-        printf("[host] container '%s' killed by signal %d\n", config.name,
-               WTERMSIG(status));
+	config_update_status(&config, "killed", WTERMSIG(status));
+	printf("[host] container '%s' killed by signal %d\n", config.name,
+	       WTERMSIG(status));
     } else {
-        config_update_status(&config, "stopped", -1);
-        printf("[host] container '%s' ended\n", config.name);
+	config_update_status(&config, "stopped", -1);
+	printf("[host] container '%s' ended\n", config.name);
     }
 
     /* Cleanup */
     cleanup_overlay(&config, merged_root);
 
-    if (WIFEXITED(status))
-	printf("[host] container '%s' exited code=%d\n", config.name,
-	       WEXITSTATUS(status));
-    else if (WIFSIGNALED(status))
-	printf("[host] container '%s' killed by signal %d\n", config.name,
-	       WTERMSIG(status));
-    else
-	printf("[host] container '%s' ended\n", config.name);
-
     if (!debug_mode) {
-        cleanup_overlay(&config, merged_root);
-        // Remove container directory
-        char cmd[MAX_PATH_LEN * 2];
-        snprintf(cmd, sizeof(cmd), "rm -rf %s", config.container_dir);
-        system(cmd);
+	cleanup_overlay(&config, merged_root);
+	// Remove container directory
+	char cmd[MAX_PATH_LEN * 2];
+	snprintf(cmd, sizeof(cmd), "rm -rf %s", config.container_dir);
+	system(cmd);
     } else {
-        printf("[host] Debug mode: container data preserved at %s\n",
-               config.container_dir);
+	printf("[host] Debug mode: container data preserved at %s\n",
+	       config.container_dir);
     }
 
     return 0;

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <errno.h>
 
-void setup_cgroup(const container_config_t * cfg)
+void setup_cgroup(const container_config_t *cfg)
 {
     char cgroup_path[MAX_PATH_LEN];
     char file_path[MAX_PATH_LEN + 32];

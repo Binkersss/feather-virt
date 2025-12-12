@@ -1,3 +1,4 @@
+#include "config.h"
 #define _GNU_SOURCE
 #include "overlay.h"
 #include <sys/mount.h>
@@ -29,21 +30,15 @@ int mkdir_p(const char *path, mode_t mode)
     return mkdir(tmp, mode);
 }
 
-int setup_overlay_root(const container_config_t * cfg, char *merged_out,
+int setup_overlay_root(const container_config_t *cfg, char *merged_out,
 		       size_t merged_len)
 {
     char upper[MAX_PATH_LEN], work[MAX_PATH_LEN], merged[MAX_PATH_LEN];
     char container_dir[MAX_PATH_LEN];
     char opts[1024];
 
-    /* Create per-container directories using name if provided, otherwise PID */
-    if (strlen(cfg->name) > 0 && strcmp(cfg->name, "unnamed") != 0) {
-	snprintf(container_dir, sizeof(container_dir), "%s/%s-%d",
-		 cfg->container_base, cfg->name, (int) cfg->pid);
-    } else {
-	snprintf(container_dir, sizeof(container_dir), "%s/%d",
-		 cfg->container_base, (int) cfg->pid);
-    }
+    snprintf(container_dir, sizeof(container_dir), "%s/%d",
+	     cfg->container_base, (int) cfg->pid);
 
     snprintf(upper, sizeof(upper), "%s/upper", container_dir);
     snprintf(work, sizeof(work), "%s/work", container_dir);
@@ -69,7 +64,7 @@ int setup_overlay_root(const container_config_t * cfg, char *merged_out,
     return 0;
 }
 
-void cleanup_overlay(const container_config_t * cfg,
+void cleanup_overlay(const container_config_t *cfg,
 		     const char *merged_root)
 {
     char rmcmd[1024];

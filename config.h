@@ -24,14 +24,14 @@ typedef struct {
     pid_t pid;			/* container PID (set at runtime) */
 
     time_t created_at;
-    char status[32]; // "running", "stopped", "exited"
+    char status[32];		// "running", "stopped", "exited"
     int exit_code;
-    
+
     // Resource limits
     struct {
-        size_t memory_bytes;
-        int cpu_quota;
-        int pids_max;
+	size_t memory_bytes;
+	int cpu_quota;
+	int pids_max;
     } limits;
 
     char container_dir[MAX_PATH_LEN];
@@ -48,15 +48,17 @@ int config_set_image(container_config_t * cfg, const char *image_name);
 void config_list_images(const char *images_dir);
 
 /* Save to config json */
-int config_save_to_file(const container_config_t *cfg);
+int config_save_to_file(const container_config_t * cfg);
 
 /* Load from config json */
-int config_load_from_file(const char *config_path, container_config_t *cfg);
+int config_load_from_file(const char *config_path,
+			  container_config_t * cfg);
 
 /* Update config json */
-int config_update_status(const container_config_t *cfg, const char *status, int exit_code);
+int config_update_status(const container_config_t * cfg,
+			 const char *status, int exit_code);
 
 /* List container configs */
-int config_list_containers(int show_all);  // 0=running only, 1=all
+int config_list_containers(int show_all);	// 0=running only, 1=all
 
 #endif				/* CONFIG_H */
