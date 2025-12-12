@@ -17,7 +17,7 @@ ifeq ($(JSON_C_LDFLAGS),)
 endif
 
 CC ?= $(GCC_COMPILER)
-CFLAGS = $(GCC_FLAGS) ($JSON_CFLAGS)
+CFLAGS = $(GCC_FLAGS) $(JSON_C_CFLAGS)
 LDFLAGS = $(JSON_C_LDFLAGS)
 
 TARGET = feather_virt_dev

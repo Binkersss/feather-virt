@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
         list_containers = 1;
         break;
     case 'A':
+        list_containers = 1;
         list_all = 1;
         break;
     case 'd':
@@ -169,14 +170,14 @@ int main(int argc, char *argv[])
     }
 
     /* Validate that image was specified */
-    if (!image_name) {
-	fprintf(stderr, "Error: --image is required\n\n");
-	print_usage(argv[0]);
-	return 1;
-    }
+    //if (!image_name) {
+	//fprintf(stderr, "Error: --image is required\n\n");
+	//print_usage(argv[0]);
+	//return 1;
+    //}
 
     /* Set and validate image */
-    if (config_set_image(&config, image_name) != 0) {
+    if (image_name && config_set_image(&config, image_name) != 0) {
 	fprintf(stderr, "\nUse --list-images to see available images\n");
 	return 1;
     }

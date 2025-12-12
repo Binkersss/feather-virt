@@ -15,7 +15,7 @@ int mkdir_p(const char *path, mode_t mode)
     tmp[sizeof(tmp) - 1] = '\0';
     len = strlen(tmp);
     if (len == 0)
-	return;
+	return -1;
     if (tmp[len - 1] == '/')
 	tmp[len - 1] = '\0';
 
