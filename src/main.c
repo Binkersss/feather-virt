@@ -107,6 +107,10 @@ void print_usage(const char *prog)
 
 int c_main(int argc, char *argv[])
 {
+    if (argc == 1) {
+        print_usage(argv[0]);
+        return 0;
+    }
     container_config_t config;
     const char *image_name = NULL;
     int list_images = 0;
@@ -130,7 +134,7 @@ int c_main(int argc, char *argv[])
     int list_containers = 0;
     int list_all = 0;
     while ((opt =
-	    getopt_long(argc, argv, "i:ls:n:h", long_options,
+	    getopt_long(argc, argv, "i:lLAds:n:h", long_options,
 			NULL)) != -1) {
 	switch (opt) {
 	case 'i':
