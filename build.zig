@@ -167,8 +167,6 @@ pub fn build(b: *std.Build) void {
             "src/config.c",
             "src/overlay.c",
             "src/cgroup.c",
-            // Uncomment when you create the refactored version:
-            // "src/cgroup_testable.c",
         },
         .flags = &.{
             "-Wall",
