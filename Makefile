@@ -16,14 +16,18 @@ ifeq ($(JSON_C_LDFLAGS),)
     JSON_C_LDFLAGS = -ljson-c
 endif
 
+BUILD_DIR = build
+BIN_DIR = $(BUILD_DIR)/bin
+OBJ_DIR = $(BUILD_DIR)/obj
+
 CC ?= $(GCC_COMPILER)
 CFLAGS = $(GCC_FLAGS) $(JSON_C_CFLAGS)
 LDFLAGS = $(JSON_C_LDFLAGS)
 
-TARGET = feather_virt_dev
-SRCS = main.c config.c overlay.c cgroup.c namespace.c
-OBJS = $(SRCS:.c=.o)
-HEADERS = config.h overlay.h cgroup.h namespace.h
+TARGET = $(BIN_DIR)/feather_virt_dev
+SRCS = src/main.c src/config.c src/overlay.c src/cgroup.c src/namespace.c
+OBJS = $(SRCS:src/%.c=$(OBJ_DIR)/%.o)
+HEADERS = src/config.h src/overlay.h src/cgroup.h src/namespace.h
 
 .PHONY: all clean install zig-build
 
@@ -40,11 +44,17 @@ check-deps:  ## Check for required dependencies
 	@echo "  json-c CFLAGS: $(JSON_C_CFLAGS)"
 	@echo "  json-c LDFLAGS: $(JSON_C_LDFLAGS)"
 
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $<
+$(OBJ_DIR)/%.o: src/%.c $(HEADERS) | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
 clean:	## Remove build artifacts
 	rm -f $(TARGET) $(OBJS)
